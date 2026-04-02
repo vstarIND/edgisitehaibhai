@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication - Immersive Learning System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #FFFFFF;
+            --accent-color: #00E676;
+            --font-main: 'Outfit', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-color);
+            height: 100vh; width: 100vw; overflow: hidden !important; 
+            font-family: var(--font-main); display: flex; justify-content: center;
+            align-items: center; flex-direction: column;
+        }
+
+        .ambient-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .bg-img { width: 100%; height: 100%; object-fit: cover; filter: blur(50px) brightness(0.12); opacity: 0.7; }
+
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.04; z-index: 5;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: flex; justify-content: center; align-items: center; z-index: 1000; cursor: pointer; transition: opacity 0.8s ease;
+        }
+        .start-btn { font-size: 1.2rem; color: var(--accent-color); letter-spacing: 0.2rem; text-transform: uppercase; animation: pulse-glow 2.5s infinite; opacity: 0.8; font-weight: 300; }
+        
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.5; text-shadow: 0 0 5px var(--accent-color); }
+            50% { opacity: 1; text-shadow: 0 0 15px var(--accent-color); }
+        }
+
+        .watermark { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: var(--text-color); opacity: 0.2; letter-spacing: 0.3rem; z-index: 50; pointer-events: none; text-transform: uppercase; font-weight: 200; white-space: nowrap; }
+
+        .wrapper { display: flex; width: 92%; max-width: 1400px; height: 88vh; position: relative; flex-direction: row; justify-content: flex-start; align-items: center; }
+
+        .slide-enter { animation: slideFadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+        .slide-exit { animation: slideFadeOut 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; pointer-events: none; }
+
+        @keyframes slideFadeIn { 0% { transform: translateY(20px) scale(0.98); opacity: 0; filter: blur(8px); } 100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); } }
+        @keyframes slideFadeOut { 0% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); } 100% { transform: translateY(-30px) scale(0.98); opacity: 0; filter: blur(8px); } }
+
+        /* Hook Container Area */
+        .hook-container { flex: 0.30; text-align: left; border-right: 1px solid rgba(255, 255, 255, 0.08); padding-right: 3rem; display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; height: 100%; }
+        .hook-heading { font-size: clamp(1.6rem, 2.2vw, 2.2rem); font-weight: 600; color: var(--accent-color); margin-bottom: 0.5rem; letter-spacing: 0.05rem; text-shadow: 0 0 15px rgba(0, 230, 118, 0.2); line-height: 1.2; }
+        .hook-line { font-size: clamp(1rem, 1.3vw, 1.4rem); font-weight: 200; line-height: 1.5; letter-spacing: 0.05rem; opacity: 0.8; }
+
+        /* Teaching Content Area */
+        .teaching-container { flex: 0.70; padding-left: 4.5rem; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        
+        #type-target { display: flex; flex-direction: column; justify-content: center; width: 100%; }
+        .content-block { font-size: clamp(0.95rem, 1.3vw, 1.35rem); font-weight: 300; line-height: 1.6; margin-bottom: 1rem; letter-spacing: 0.03em; }
+        .content-line { display: block; min-height: 1em; }
+
+        .highlight-green { color: var(--accent-color); text-shadow: 0 0 12px rgba(0, 230, 118, 0.2); font-weight: 400; }
+        .highlight-final { color: var(--accent-color); font-weight: 500; text-shadow: 0 0 15px rgba(0, 230, 118, 0.3); font-size: clamp(1.1rem, 1.4vw, 1.5rem); margin-top: 0.2rem; }
+
+        .diagram-box { border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 6px; padding: 1rem 1.5rem; display: flex; justify-content: center; align-items: flex-start; gap: 1.2rem; margin: 1rem 0; background: rgba(0, 230, 118, 0.02); box-shadow: 0 0 20px rgba(0, 230, 118, 0.05); width: fit-content; max-width: 100%; flex-wrap: wrap; }
+        .diagram-step { opacity: 0; transition: opacity 0.8s ease; font-size: clamp(0.95rem, 1.2vw, 1.25rem); font-weight: 300; color: var(--text-color); letter-spacing: 0.05rem; }
+        .diagram-step.highlight { color: var(--accent-color); font-weight: 400; text-shadow: 0 0 10px rgba(0, 230, 118, 0.2); }
+        .diagram-arrow { color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; }
+        .diagram-step.visible { opacity: 1; }
+
+        .typing-cursor { display: inline-block; width: 2px; height: 1.15em; background: var(--text-color); vertical-align: text-bottom; margin-left: 4px; animation: blink 0.8s infinite; box-shadow: 0 0 8px var(--accent-color); }
+        .cursor-hidden { display: none !important; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* MCQ UI Styles */
+        .quiz-container { display: flex; flex-direction: column; gap: 1.2rem; width: 100%; opacity: 0; transition: opacity 0.8s ease; }
+        .quiz-container.visible { opacity: 1; }
+        .quiz-question-block { display: flex; flex-direction: column; gap: 0.6rem; }
+        .quiz-q-text { font-size: clamp(1rem, 1.2vw, 1.3rem); font-weight: 400; color: var(--text-color); margin-bottom: 0.2rem; }
+        .quiz-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        
+        .quiz-opt-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; text-align: left; font-size: clamp(0.9rem, 1vw, 1.05rem); transition: all 0.3s ease; font-weight: 300; font-family: var(--font-main); }
+        .quiz-opt-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); }
+        .quiz-opt-btn.selected { border-color: var(--accent-color); box-shadow: 0 0 10px rgba(0, 230, 118, 0.15); background: rgba(0, 230, 118, 0.05); }
+        .quiz-opt-btn.correct { border-color: var(--accent-color) !important; background: rgba(0, 230, 118, 0.15) !important; color: #fff; box-shadow: 0 0 10px rgba(0, 230, 118, 0.2); }
+        .quiz-opt-btn.wrong { border-color: #ff3b3b !important; background: rgba(255, 59, 59, 0.15) !important; color: #fff; box-shadow: 0 0 10px rgba(255, 59, 59, 0.2); }
+
+        .quiz-submit-btn { margin-top: 0.5rem; align-self: flex-start; background: none; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 0.7rem 2rem; font-size: 1rem; cursor: pointer; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.1rem; transition: all 0.3s ease; font-family: var(--font-main); }
+        .quiz-submit-btn:hover { background: rgba(0, 230, 118, 0.1); box-shadow: 0 0 15px rgba(0, 230, 118, 0.2); }
+        
+        .quiz-feedback { margin-top: 0.5rem; font-size: clamp(1rem, 1.2vw, 1.3rem); font-weight: 400; opacity: 0; transition: opacity 0.5s ease; }
+        .quiz-feedback.visible { opacity: 1; }
+        .quiz-feedback.success { color: var(--accent-color); text-shadow: 0 0 10px rgba(0, 230, 118, 0.3); }
+        .quiz-feedback.error { color: #ff3b3b; text-shadow: 0 0 10px rgba(255, 59, 59, 0.3); }
+
+        .nav-controls { position: fixed; bottom: 2rem; right: 3rem; display: flex; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.6s ease; gap: 1rem; }
+        .nav-controls.visible { opacity: 1; pointer-events: auto; }
+        .nav-btn { background: none; border: 1px solid rgba(0, 230, 118, 0.3); color: var(--accent-color); padding: 0.7rem 2rem; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s ease; backdrop-filter: blur(5px); border-radius: 4px; font-weight: 400; letter-spacing: 0.15rem; text-transform: uppercase; box-shadow: 0 0 15px rgba(0, 230, 118, 0.1); width: 140px; }
+        .nav-btn:hover:not(.inactive) { background: rgba(0, 230, 118, 0.08); box-shadow: 0 0 20px rgba(0, 230, 118, 0.25); border-color: var(--accent-color); }
+        .nav-btn.inactive { border: 1px solid rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.3); box-shadow: none; cursor: default; }
+        .progress-tracker { position: fixed; top: 1rem; right: 2rem; font-size: 0.8rem; letter-spacing: 0.2rem; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+
+        @media (max-width: 768px) {
+            .wrapper { flex-direction: column; height: 95vh; width: 95%; justify-content: center; padding-top: 2rem; }
+            .hook-container { flex: 0; border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-right: 0; padding-bottom: 0.8rem; margin-bottom: 0.8rem; text-align: center; width: 100%; align-items: center; gap: 0.6rem; height: auto; }
+            .hook-heading { font-size: 1.3rem; } .hook-line { font-size: 0.9rem; }
+            .teaching-container { flex: 1; padding-left: 0; width: 100%; justify-content: flex-start; }
+            .content-block { margin-bottom: 0.6rem; font-size: 0.95rem; }
+            .quiz-options-grid { grid-template-columns: 1fr; gap: 0.4rem; }
+            .quiz-container { gap: 0.8rem; }
+            .nav-controls { right: auto; left: 50%; transform: translateX(-50%); bottom: 1.5rem; }
+            .progress-tracker { display: none; }
+        }
+    </style>
+</head>
+<body id="main-body">
+    <div class="noise-overlay"></div>
+    <div class="ambient-bg">
+        <img src="C:\Users\AVN\.gemini\antigravity\brain\4b1c93bf-1fd5-47d2-977d-58733be700be\talking_people_bg_1775043712202.png" 
+             class="bg-img" alt="Background">
+    </div>
+
+    <div id="start-overlay"><div class="start-btn">Click here to begin »</div></div>
+    <div class="progress-tracker" id="progress-tracker">TOPIC 1 OF 11</div>
+    <div class="watermark">DIGITAL FIRE [e txt book] | powered by EdGion.in</div>
+    <div class="wrapper" id="content-wrapper"></div>
+    <div class="nav-controls" id="nav-container">
+        <button id="prev-btn" class="nav-btn inactive">« Back</button>
+        <button id="next-btn" class="nav-btn inactive">Next »</button>
+    </div>
+
+    <!-- Data Array File -->
+    <script src="data.js"></script>
+
+    <script>
+        const startOverlay = document.getElementById('start-overlay');
+        const contentWrapper = document.getElementById('content-wrapper');
+        const navContainer = document.getElementById('nav-container');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const progressTracker = document.getElementById('progress-tracker');
+
+        const typingAudio = new Audio('typing_sound.mp3');
+        typingAudio.loop = true;
+        typingAudio.volume = 0.12;
+
+        let currentSlideIndex = 0;
+        let isTransitioning = false;
+        let currentRunId = 0;
+        let userAnswers = {};
+
+        function pauseAudio() { if (!typingAudio.paused) { typingAudio.pause(); typingAudio.currentTime = 0; } }
+        function playAudio() { if (typingAudio.paused) typingAudio.play().catch(() => {}); }
+        function shuffle(array) { return array.sort(() => 0.5 - Math.random()); }
+
+        async function playSlide(index) {
+            currentRunId++;
+            const runId = currentRunId;
+            if (index >= slides.length) return;
+            
+            progressTracker.innerText = `TOPIC ${index + 1} OF ${slides.length}`;
+            const slide = slides[index];
+
+            nextBtn.classList.add('inactive'); 
+            nextBtn.innerText = "Next »";
+            if (index > 0) prevBtn.classList.remove('inactive'); else prevBtn.classList.add('inactive');
+            
+            contentWrapper.innerHTML = '';
+            userAnswers = {};
+
+            const hookContainer = document.createElement('div');
+            hookContainer.className = 'hook-container slide-enter';
+            if (slide.heading) { const h = document.createElement('h2'); h.className = 'hook-heading'; h.textContent = slide.heading; hookContainer.appendChild(h); }
+            slide.hook.forEach(line => { const p = document.createElement('div'); p.className = 'hook-line'; p.textContent = line; hookContainer.appendChild(p); });
+
+            const teachingContainer = document.createElement('div');
+            teachingContainer.className = 'teaching-container slide-enter';
+            const typeTarget = document.createElement('div');
+            typeTarget.id = 'type-target';
+            teachingContainer.appendChild(typeTarget);
+
+            const cursor = document.createElement('span'); cursor.className = 'typing-cursor';
+
+            contentWrapper.appendChild(hookContainer);
+            contentWrapper.appendChild(teachingContainer);
+
+            await new Promise(r => setTimeout(r, 1200));
+            if (runId !== currentRunId) return;
+
+            // TYPING PHASE
+            for (const item of slide.content) {
+                if (runId !== currentRunId) return;
+                if (Array.isArray(item)) await typeTextBlock(item, typeTarget, cursor, runId);
+                else if (item.type === 'diagram') await revealDiagram(item, typeTarget, runId);
+            }
+
+            if (runId !== currentRunId) return;
+            cursor.classList.add('cursor-hidden');
+
+            // Wait 2 secs to let user absorb, then Quiz
+            await new Promise(r => setTimeout(r, 2000));
+            if (runId !== currentRunId) return;
+
+            startQuiz(slide, teachingContainer, typeTarget, runId);
+        }
+
+        async function startQuiz(slide, teachingContainer, typeTarget, runId) {
+            typeTarget.classList.add('slide-exit');
+            await new Promise(r => setTimeout(r, 600));
+            if (runId !== currentRunId) return;
+            typeTarget.style.display = 'none';
+
+            const quizContainer = document.createElement('div');
+            quizContainer.className = 'quiz-container slide-enter';
+
+            let bank = [...(slide.quizBank || [])];
+            if(bank.length < 3) return; // safety
+            let currentQuizData = shuffle(bank).slice(0, 3);
+            
+            currentQuizData.forEach((qObj, qIdx) => {
+                const qBlock = document.createElement('div'); qBlock.className = 'quiz-question-block';
+                const qText = document.createElement('div'); qText.className = 'quiz-q-text'; qText.textContent = `Q${qIdx + 1}. ${qObj.q}`;
+                qBlock.appendChild(qText);
+
+                const optsGrid = document.createElement('div'); optsGrid.className = 'quiz-options-grid';
+                qObj.options.forEach((optStr, optIdx) => {
+                    const btn = document.createElement('button'); btn.className = 'quiz-opt-btn'; btn.textContent = optStr;
+                    btn.onclick = () => {
+                        Array.from(optsGrid.children).forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected'); userAnswers[qIdx] = optIdx;
+                    };
+                    optsGrid.appendChild(btn);
+                });
+                qBlock.appendChild(optsGrid); quizContainer.appendChild(qBlock);
+            });
+
+            const submitBtn = document.createElement('button'); submitBtn.className = 'quiz-submit-btn'; submitBtn.textContent = 'Submit Answers';
+            const feedbackText = document.createElement('div'); feedbackText.className = 'quiz-feedback';
+
+            submitBtn.onclick = async () => {
+                if (Object.keys(userAnswers).length < 3) {
+                    feedbackText.textContent = "Bhai, pure 3 answer toh select kar! 👀";
+                    feedbackText.className = 'quiz-feedback error visible';
+                    return;
+                }
+
+                let passed = true;
+                currentQuizData.forEach((qObj, qIdx) => {
+                    const selectedIdx = userAnswers[qIdx];
+                    const grid = quizContainer.children[qIdx].querySelector('.quiz-options-grid');
+                    const selectedBtn = grid.children[selectedIdx];
+                    
+                    if (selectedIdx === qObj.correctIndex) {
+                        selectedBtn.classList.add('correct');
+                    } else {
+                        passed = false; selectedBtn.classList.add('wrong');
+                        grid.children[qObj.correctIndex].classList.add('correct');
+                    }
+                    Array.from(grid.children).forEach(b => b.onclick = null); // disable edits
+                });
+
+                submitBtn.style.display = 'none';
+
+                if (passed) {
+                    feedbackText.textContent = "Nice. Samajh aa gaya. 🔥";
+                    feedbackText.className = 'quiz-feedback success visible';
+                    if (currentSlideIndex < slides.length - 1) { nextBtn.classList.remove('inactive'); } 
+                    else { nextBtn.classList.add('inactive'); nextBtn.innerText = "Syllabus Completed"; }
+                } else {
+                    feedbackText.innerHTML = "dobara samajh bhai...<br>aur abki baar dhyan se 😤";
+                    feedbackText.className = 'quiz-feedback error visible';
+                    
+                    await new Promise(r => setTimeout(r, 4500));
+                    if (runId !== currentRunId) return;
+                    
+                    playSlide(currentSlideIndex); // Restart slide to reteach
+                }
+            };
+
+            quizContainer.appendChild(submitBtn);
+            quizContainer.appendChild(feedbackText);
+            teachingContainer.appendChild(quizContainer);
+            
+            void quizContainer.offsetWidth;
+            quizContainer.classList.add('visible');
+        }
+
+        async function typeTextBlock(blockData, typeTarget, cursor, runId) {
+            cursor.classList.remove('cursor-hidden');
+            const p = document.createElement('div'); p.className = 'content-block'; typeTarget.appendChild(p);
+
+            let currentLine = document.createElement('span'); currentLine.className = 'content-line'; p.appendChild(currentLine);
+
+            for (const segment of blockData) {
+                if (runId !== currentRunId) return;
+                const textChars = segment.text.split('');
+                let currentSegmentSpan = document.createElement('span');
+                if (segment.highlight) currentSegmentSpan.classList.add('highlight-green');
+                if (segment.final) currentSegmentSpan.classList.add('highlight-final');
+                currentLine.appendChild(currentSegmentSpan);
+
+                for (let i = 0; i < textChars.length; i++) {
+                    if (runId !== currentRunId) { pauseAudio(); return; }
+                    const char = textChars[i];
+
+                    if (char === '\n') {
+                        currentLine = document.createElement('span'); currentLine.className = 'content-line'; p.appendChild(currentLine);
+                        currentSegmentSpan = document.createElement('span');
+                        if (segment.highlight) currentSegmentSpan.classList.add('highlight-green');
+                        if (segment.final) currentSegmentSpan.classList.add('highlight-final');
+                        currentLine.appendChild(currentSegmentSpan);
+                        pauseAudio(); await new Promise(r => setTimeout(r, 450)); continue;
+                    }
+
+                    currentSegmentSpan.textContent += char; currentLine.appendChild(cursor); playAudio();
+
+                    let delay = 32 + Math.random() * 25;
+                    if (char === '.' || char === '?') { pauseAudio(); delay = 500; } 
+                    else if (char === ',' || char === '…') { pauseAudio(); delay = 300; }
+                    if (char === '.' && i >= 2 && textChars[i-1] === '.' && textChars[i-2] === '.') delay = 800; 
+
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+            pauseAudio(); if (runId === currentRunId) await new Promise(r => setTimeout(r, 600)); 
+        }
+
+        async function revealDiagram(item, typeTarget, runId) {
+            if (runId !== currentRunId) return;
+            const diBox = document.createElement('div'); diBox.className = 'diagram-box';
+            if (item.direction === 'column') { diBox.style.flexDirection = 'column'; diBox.style.alignItems = 'flex-start'; diBox.style.gap = '0.8rem'; }
+            typeTarget.appendChild(diBox);
+            await new Promise(r => setTimeout(r, 500));
+            if (runId !== currentRunId) return;
+
+            for (const step of item.steps) {
+                if (runId !== currentRunId) return;
+                const stepEl = document.createElement('div'); stepEl.className = 'diagram-step';
+                if (step.isArrow) stepEl.classList.add('diagram-arrow'); else if (step.highlight) stepEl.classList.add('highlight');
+                stepEl.textContent = step.text; diBox.appendChild(stepEl);
+
+                void stepEl.offsetWidth; stepEl.classList.add('visible');
+                playAudio(); setTimeout(pauseAudio, 100);
+                await new Promise(r => setTimeout(r, 600)); 
+            }
+            if (runId === currentRunId) await new Promise(r => setTimeout(r, 600));
+        }
+
+        function triggerTransition(directionOffset) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            nextBtn.classList.add('inactive'); prevBtn.classList.add('inactive');
+            currentRunId++; pauseAudio();
+
+            Array.from(contentWrapper.children).forEach(child => {
+                child.classList.remove('slide-enter'); child.classList.add('slide-exit');
+            });
+
+            setTimeout(() => {
+                currentSlideIndex += directionOffset; playSlide(currentSlideIndex); isTransitioning = false;
+            }, 800);
+        }
+
+        startOverlay.addEventListener('click', () => {
+            startOverlay.style.opacity = '0';
+            setTimeout(() => { startOverlay.style.display = 'none'; navContainer.classList.add('visible'); playSlide(currentSlideIndex); }, 800);
+        });
+
+        nextBtn.addEventListener('click', () => { if (!nextBtn.classList.contains('inactive')) triggerTransition(1); });
+        prevBtn.addEventListener('click', () => { if (!prevBtn.classList.contains('inactive')) triggerTransition(-1); });
+    </script>
+</body>
+</html>
